@@ -26,14 +26,14 @@ jobs:
 
         - name: build and push user-service 
           run: |
-            docker build -t $ACR_NAME/user-service:${{ github.sha }} .services/user-service
+            docker build -t $ACR_NAME/user-service:${{ github.sha }} services/user-service
             docker push $ACR_NAME/user-service:${{ github.sha }}
             docker tag $ACR_NAME/user-service:${{ github.sha }} $ACR_NAME/user-service:latest
             docker push $ACR_NAME/user-service:latest
 
         - name: build and push product-service
           run: |
-            docker build -t $ACR_NAME/product-service:${{ github.sha }} .services/product-service
+            docker build -t $ACR_NAME/product-service:${{ github.sha }} services/product-service
             docker push $ACR_NAME/product-service:${{ github.sha }}
             docker tag $ACR_NAME/product-service:${{ github.sha }} $ACR_NAME/product-service:latest
             docker push $ACR_NAME/product-service:latest
