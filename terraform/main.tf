@@ -7,7 +7,12 @@ terraform {
   }
 }
 provider "azurerm" {
-  features {}
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+
+  }
 }
 resource "azurerm_resource_group" "main" {
   name     = var.resource_group_name

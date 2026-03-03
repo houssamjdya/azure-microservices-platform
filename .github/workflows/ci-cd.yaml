@@ -1,0 +1,42 @@
+name: CI/CD Pipeline
+
+on:
+    push:
+        branches: [main]
+
+env: 
+    ACR_NAME: acrmicroservicesplatform.azurecr.io
+
+jobs:
+    build-and-push:
+        runs-on: ubuntu-latest
+
+        steps:
+        - name: checkout code
+          uses: actions/checkout@v3
+
+        - name: login to azure
+          uses: azure/login@v1
+          with:
+            creds: ${{ secrets.AZURE_CREDENTIALS}}
+
+        - name: login to ACR
+          run: |
+            az acr login --name acrmicroservicesplatform
+
+        - name: build and push user-service 
+          run: |
+            docker build -t $ACR_NAME/user-service:${{ github.sha }} .services/user-service
+            docker push $ACR_NAME/user-service:${{ github.sha }}
+            docker tag $ACR_NAME/user-service:${{ github.sha }} $ACR_NAME/user-service:latest
+            docker push $ACR_NAME/user-service:latest
+
+        - name: build and push product-service
+          run: |
+            docker build -t $ACR_NAME/product-service:${{ github.sha }} .services/product-service
+            docker push $ACR_NAME/product-service:${{ github.sha }}
+            docker tag $ACR_NAME/product-service:${{ github.sha }} $ACR_NAME/product-service:latest
+            docker push $ACR_NAME/product-service:latest
+            
+
+              
