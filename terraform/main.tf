@@ -97,3 +97,59 @@ resource "azurerm_key_vault_secret" "db_password" {
   value        = "super-secret-password-123"
   key_vault_id = azurerm_key_vault.main.id
 }
+
+resource "azurerm_monitor_diagnostic_setting" "aks" {
+  name                       = "aks-diagnostics"
+  target_resource_id         = azurerm_kubernetes_cluster.main.id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+
+  enabled_log {
+    category = "kube-apiserver"
+  }
+
+  enabled_log {
+    category = "kube-controller-manager"
+  }
+
+  metric {
+    category = "AllMetrics"
+    enabled  = true
+  }
+}
+
+resource "azurerm_monitor_metric_alert" "pod_failed" {
+  name                = "alert-pod-failed"
+  resource_group_name = azurerm_resource_group.main.name
+  scopes              = [azurerm_kubernetes_cluster.main.id]
+  description         = "Alert when a pod fails"
+  severity            = 2
+
+  criteria {
+    metric_namespace = "Microsoft.ContainerService/managedClusters"
+    metric_name      = "kube_pod_status_phase"
+    aggregation      = "Average"
+    operator         = "GreaterThan"
+    threshold        = 0
+
+    dimension {
+      name     = "phase"
+      operator = "Include"
+      values   = ["Failed"]
+    }
+  }
+
+  action {
+    action_group_id = azurerm_monitor_action_group.main.id
+  }
+}
+
+resource "azurerm_monitor_action_group" "main" {
+  name                = "ag-microservices-platform"
+  resource_group_name = azurerm_resource_group.main.name
+  short_name          = "microsvcs"
+
+  email_receiver {
+    name          = "admin"
+    email_address = "houssam.jdya@outlook.com"
+  }
+}
