@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: product-service
-        image: acrmicroservicesplatform.azurecr.io/product-service:321a105f45274010af67273cb873c9ff178e11d9
+        image: acrmicroservicesplatform.azurecr.io/product-service:latest
         ports:
         - containerPort: 5000
         env:
@@ -24,6 +24,11 @@ spec:
           value: "5000"
         - name: USER_SERVICE_URL
           value: "http://user-service:5000"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: DB_PASSWORD
         livenessProbe:
           httpGet:
             path: /health
@@ -36,3 +41,14 @@ spec:
             port: 5000
           initialDelaySeconds: 5
           periodSeconds: 5
+        volumeMounts:
+        - name: secrets-store
+          mountPath: "/mnt/secrets"
+          readOnly: true
+      volumes:
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: "azure-keyvault-secrets"
