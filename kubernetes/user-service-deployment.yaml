@@ -11,26 +11,26 @@ spec:
       app: user-service
   template:
     metadata:
-      labels: 
-        app: user-service 
+      labels:
+        app: user-service
     spec:
       containers:
       - name: user-service
-        image: acrmicroservicesplatform.azurecr.io/user-service:2c0b7a1d0eea0307e1d55f6cd1d5de12256954d6
+        image: acrmicroservicesplatform.azurecr.io/user-service:latest
         ports:
         - containerPort: 5000
         env:
         - name: PORT
           value: "5000"
-          livenessProbe:
-            httpGet:
+        livenessProbe:
+          httpGet:
             path: /health
             port: 5000
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            readinessProbe:
-            httpGet:
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
             path: /health
             port: 5000
-            initialDelaySeconds: 10
-            periodSeconds: 10
+          initialDelaySeconds: 5
+          periodSeconds: 5

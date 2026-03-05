@@ -10,11 +10,7 @@ users = [
 
 @app.route('/health')
 def health():
-    return jsonify({
-        "service": "user-service",
-        "status": "healthy",
-        "db_password_configured": bool(os.environ.get("DB_PASSWORD"))
-    })
+    return jsonify({"service": "user-service", "status": "healthy"})
 
 @app.route('/users')
 def get_users():

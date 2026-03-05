@@ -13,11 +13,7 @@ USER_SERVICE_URL = os.environ.get("USER_SERVICE_URL", "http://user-service:5000"
 
 @app.route('/health')
 def health():
-    return jsonify({
-        "service": "product-service",
-        "status": "healthy",
-        "db_password_configured": bool(os.environ.get("DB_PASSWORD"))
-    })
+    return jsonify({"service": "product-service", "status": "healthy"})
 
 @app.route('/products')
 def get_products():
@@ -28,12 +24,10 @@ def get_product(product_id):
     product = next((p for p in products if p["id"] == product_id), None)
     if not product:
         return jsonify({"error": "Product not found"}), 404
-    
     try:
         response = requests.get(f"{USER_SERVICE_URL}/users/{product['owner_id']}")
         owner = response.json()
-        product_with_owner = {**product, "owner": owner}
-        return jsonify(product_with_owner)
+        return jsonify({**product, "owner": owner})
     except:
         return jsonify(product)
 
