@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: user-service
-        image: acrmicroservicesplatform.azurecr.io/user-service:76b3c70a20c008fc6635316297c22e68f7518d1f
+        image: acrmicroservicesplatform.azurecr.io/user-service:0cb871e2676e05ba2c5b6ccb591abe5432a00ff7
         ports:
         - containerPort: 5000
         env:
