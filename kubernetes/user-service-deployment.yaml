@@ -11,26 +11,42 @@ spec:
       app: user-service
   template:
     metadata:
-      labels: 
-        app: user-service 
+      labels:
+        app: user-service
     spec:
       containers:
       - name: user-service
-        image: acrmicroservicesplatform.azurecr.io/user-service:00d5a834b5c50446514db75439adee53985c429e
+        image: acrmicroservicesplatform.azurecr.io/user-service:latest
         ports:
         - containerPort: 5000
         env:
         - name: PORT
           value: "5000"
-          livenessProbe:
-            httpGet:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: DB_PASSWORD
+        livenessProbe:
+          httpGet:
             path: /health
             port: 5000
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            readinessProbe:
-            httpGet:
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
             path: /health
             port: 5000
-            initialDelaySeconds: 10
-            periodSeconds: 10
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: secrets-store
+          mountPath: "/mnt/secrets"
+          readOnly: true
+      volumes:
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: "azure-keyvault-secrets"

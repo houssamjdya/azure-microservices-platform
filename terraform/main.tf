@@ -54,6 +54,10 @@ resource "azurerm_kubernetes_cluster" "main" {
   oms_agent {
     log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
   }
+
+  key_vault_secrets_provider {
+    secret_rotation_enabled = true
+  }
 }
 
 resource "azurerm_role_assignment" "aks_acr_pull" {
