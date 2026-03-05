@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: product-service
-        image: acrmicroservicesplatform.azurecr.io/product-service:950c3c2b7962312988545a7e164697a836c59b0b
+        image: acrmicroservicesplatform.azurecr.io/product-service:76b3c70a20c008fc6635316297c22e68f7518d1f
         ports:
         - containerPort: 5000
         env:
