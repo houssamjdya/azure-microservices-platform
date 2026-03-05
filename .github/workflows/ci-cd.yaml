@@ -1,81 +1,84 @@
 name: CI/CD Pipeline
 
 on:
-    push:
-        branches: [main]
+  push:
+    branches: [main]
 
-env: 
-    ACR_NAME: acrmicroservicesplatform.azurecr.io
+permissions:
+  contents: write
+
+env:
+  ACR_NAME: acrmicroservicesplatform.azurecr.io
 
 jobs:
-    build-and-push:
-        runs-on: ubuntu-latest
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
-        steps:
-        - name: checkout code
-          uses: actions/checkout@v3
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-        - name: login to azure
-          uses: azure/login@v1
-          with:
-            creds: ${{ secrets.AZURE_CREDENTIALS}}
+    - name: Login to ACR
+      run: az acr login --name acrmicroservicesplatform
 
-        - name: login to ACR
-          run: |
-            az acr login --name acrmicroservicesplatform
+    - name: Build and push user-service
+      run: |
+        docker build -t $ACR_NAME/user-service:${{ github.sha }} services/user-service
+        docker push $ACR_NAME/user-service:${{ github.sha }}
+        docker tag $ACR_NAME/user-service:${{ github.sha }} $ACR_NAME/user-service:latest
+        docker push $ACR_NAME/user-service:latest
 
-        - name: build and push user-service 
-          run: |
-            docker build -t $ACR_NAME/user-service:${{ github.sha }} services/user-service
-            docker push $ACR_NAME/user-service:${{ github.sha }}
-            docker tag $ACR_NAME/user-service:${{ github.sha }} $ACR_NAME/user-service:latest
-            docker push $ACR_NAME/user-service:latest
+    - name: Build and push product-service
+      run: |
+        docker build -t $ACR_NAME/product-service:${{ github.sha }} services/product-service
+        docker push $ACR_NAME/product-service:${{ github.sha }}
+        docker tag $ACR_NAME/product-service:${{ github.sha }} $ACR_NAME/product-service:latest
+        docker push $ACR_NAME/product-service:latest
 
-        - name: build and push product-service
-          run: |
-            docker build -t $ACR_NAME/product-service:${{ github.sha }} services/product-service
-            docker push $ACR_NAME/product-service:${{ github.sha }}
-            docker tag $ACR_NAME/product-service:${{ github.sha }} $ACR_NAME/product-service:latest
-            docker push $ACR_NAME/product-service:latest
+    - name: Update image tags in Kubernetes manifests
+      run: |
+        sed -i "s|$ACR_NAME/user-service:.*|$ACR_NAME/user-service:${{ github.sha }}|g" kubernetes/user-service-deployment.yaml
+        sed -i "s|$ACR_NAME/product-service:.*|$ACR_NAME/product-service:${{ github.sha }}|g" kubernetes/product-service-deployment.yaml
 
-        - name: update image tags in Kubernetes manifests 
-          run: |
-            sed -i "s|$ACR_NAME/user-service:.*|$ACR_NAME/user-service:${{ github.sha }}|g" kubernetes/user-service-deployment.yaml
-            sed -i "s|$ACR_NAME/product-service:.*|$ACR_NAME/product-service:${{ github.sha }}|g" kubernetes/product-service-deployment.yaml
+    - name: Commit updated manifests
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git add kubernetes/
+        git commit -m "chore: update image tags to ${{ github.sha }}"
+        git push
 
-        - name: commit updated manifests
-          run: |
-            git config --global user.name "github-actions"
-            git config --global user.email "github-actions@github.com"
-            git add kubernetes/
-            git commit -m "chore: update image tags to ${{ github.sha }}"
-            git push
+  deploy-argocd:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    deploy-argocd:
-      runs-on: ubuntu-latest
-      needs: build-and-push
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v3
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-        - name: Login to Azure
-          uses: azure/login@v1
-          with:
-            creds: ${{ secrets.AZURE_CREDENTIALS}}
+    - name: Connect to AKS
+      run: |
+        az aks get-credentials \
+          --resource-group rg-microservices-platform \
+          --name aks-microservices-platform
 
-        - name: Connect to AKS
-          run: |
-            az aks get-credentials --resource-group rg-microservices-platform --name aks-microservices-platform
-        
-        - name: Install ArgoCD 
-          run: |
-              kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
-              kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-              kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
+    - name: Install ArgoCD
+      run: |
+        kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+        kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+        kubectl wait --for=condition=available --timeout=300s \
+          deployment/argocd-server -n argocd
 
-        - name: Deploy ArgoCD Application
-          run: |
-              kubectl apply -f argocd/application.yaml
-            
-
-              
+    - name: Deploy ArgoCD application
+      run: |
+        kubectl apply -f argocd/application.yaml
