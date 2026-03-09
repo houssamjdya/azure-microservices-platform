@@ -10,4 +10,6 @@ __pycache__/
 .env
 
 # OS
+.DS_Storeterraform.tfstate
+
 .DS_Store
