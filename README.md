@@ -86,6 +86,19 @@ Every push to `main` triggers the GitHub Actions pipeline:
 
 ArgoCD monitors the `kubernetes/` directory and ensures the cluster always matches the desired state in Git. Self-healing is enabled – any manual changes to the cluster are automatically reverted.
 
+## Screenshots
+
+### CI/CD Pipeline
+![GitHub Actions](screenshots/github-actions.png)
+
+### ArgoCD Dashboard
+![ArgoCD Overview](screenshots/argocd-overview.png)
+
+![ArgoCD Details](screenshots/argocd-details.png)
+
+### Services Running
+![Services](screenshots/curl-output.png)
+
 ## Getting Started
 
 ### Prerequisites
